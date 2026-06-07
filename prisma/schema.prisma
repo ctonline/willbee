@@ -1,0 +1,41 @@
+// WillBee server-side storage (PRD §12 — store completed Wills for re-download)
+// and passwordless magic-link auth (PRD §3.5).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection used at runtime (serverless). On Vercel + Neon/Supabase
+  // this is the pooler URL; DIRECT_URL is the non-pooled URL used for migrations.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Will {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  fullName  String
+  /// JSON-serialised WillData
+  data      String
+  paid      Boolean   @default(false)
+  paymentId String?
+  /// Set once the delivery email has been sent — the idempotency lock that
+  /// stops the client fast-path and the Stripe webhook from double-sending.
+  emailedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([paymentId])
+}
+
+model MagicToken {
+  token     String   @id
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
