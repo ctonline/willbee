@@ -18,7 +18,7 @@ export function ContentPage({
           {title}
         </h1>
         {intro && <p className="mt-3 text-lg text-muted-foreground">{intro}</p>}
-        <div className="prose-willbee mt-8 space-y-5 text-[15px] leading-relaxed text-foreground/90 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_a]:text-primary [&_a]:underline [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6">
+        <div className="prose-willbee mt-8 space-y-5 text-[15px] leading-relaxed text-foreground/90 [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_a:not([data-slot=button])]:text-primary [&_a:not([data-slot=button])]:underline [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6">
           {children}
         </div>
       </main>

@@ -17,10 +17,13 @@ import {
   type SectionId,
 } from "@/lib/questions";
 import type { Answers, AnswerValue } from "@/lib/types";
+import { toast } from "sonner";
 import {
   loadAnswers,
   saveAnswers,
   markCompleted,
+  loadStep,
+  saveStep,
 } from "@/lib/client-store";
 import { ProgressTracker } from "./progress-tracker";
 import { QuestionInput } from "./question-input";
@@ -40,15 +43,22 @@ export function WillFlow({ onExit }: { onExit: () => void }) {
   // Hydrate persisted answers once on mount. localStorage isn't available during
   // SSR, so reading it in an effect is the correct pattern here.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAnswers(loadAnswers());
+    setIndex(loadStep());
     setHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   // Persist answers whenever they change (after hydration).
   useEffect(() => {
     if (hydrated) saveAnswers(answers);
   }, [answers, hydrated]);
+
+  // Persist the current step so Save & exit can resume in place.
+  useEffect(() => {
+    if (hydrated) saveStep(index);
+  }, [index, hydrated]);
 
   // Keep the cursor within bounds if branching shrinks the question list.
   useEffect(() => {
@@ -137,6 +147,13 @@ export function WillFlow({ onExit }: { onExit: () => void }) {
     setError(null);
   }, []);
 
+  // Save & exit: persist the place, confirm it, and return to the landing page.
+  const exitWithSave = useCallback(() => {
+    saveStep(index);
+    toast.success("Progress saved on this device. Pick up where you left off any time.");
+    onExit();
+  }, [index, onExit]);
+
   // ── Derived progress ──────────────────────────────────────────────────────
   const { completedSections, currentSection, percent } = useMemo(() => {
     const completed = new Set<SectionId>();
@@ -180,7 +197,7 @@ export function WillFlow({ onExit }: { onExit: () => void }) {
 
   if (phase === "review") {
     return (
-      <FlowShell onExit={onExit} progress={{ completedSections, currentSection: "final", percent: 100 }}>
+      <FlowShell onExit={exitWithSave} progress={{ completedSections, currentSection: "final", percent: 100 }}>
         <ReviewScreen
           answers={answers}
           onEditSection={jumpToSection}
@@ -207,7 +224,7 @@ export function WillFlow({ onExit }: { onExit: () => void }) {
     : undefined;
 
   return (
-    <FlowShell onExit={onExit} progress={{ completedSections, currentSection, percent }}>
+    <FlowShell onExit={exitWithSave} progress={{ completedSections, currentSection, percent }}>
       <div className="mx-auto max-w-xl">
         <p className="mb-2 text-sm font-medium text-primary">
           {SECTIONS.find((s) => s.id === current.section)?.title}

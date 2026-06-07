@@ -9,6 +9,7 @@ const ANSWERS_KEY = "willbee:answers";
 const EMAIL_KEY = "willbee:email";
 const COMPLETED_KEY = "willbee:completed";
 const PAID_KEY = "willbee:paid";
+const STEP_KEY = "willbee:step";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -43,6 +44,15 @@ export function saveEmail(email: string): void {
   write(EMAIL_KEY, email);
 }
 
+/** The question index the user had reached, so Save & exit can resume in place. */
+export function saveStep(index: number): void {
+  write(STEP_KEY, index);
+}
+export function loadStep(): number {
+  const n = read<number>(STEP_KEY, 0);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
 export function markCompleted(v: boolean): void {
   write(COMPLETED_KEY, v);
 }
@@ -59,7 +69,7 @@ export function isPaid(): boolean {
 
 export function clearAll(): void {
   if (typeof window === "undefined") return;
-  [ANSWERS_KEY, EMAIL_KEY, COMPLETED_KEY, PAID_KEY].forEach((k) =>
+  [ANSWERS_KEY, EMAIL_KEY, COMPLETED_KEY, PAID_KEY, STEP_KEY].forEach((k) =>
     window.localStorage.removeItem(k),
   );
 }
