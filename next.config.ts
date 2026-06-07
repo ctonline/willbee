@@ -2,11 +2,13 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// Content-Security-Policy allowing Stripe.js. In development we relax script/
-// style rules because Next injects inline/eval'd dev tooling.
+// Content-Security-Policy allowing Stripe.js. `'wasm-unsafe-eval'` lets the
+// browser compile the WebAssembly that @react-pdf/renderer (yoga-layout) needs
+// to generate the Will PDF client-side, without permitting general eval(). In
+// development we additionally allow 'unsafe-eval' for Next's dev tooling.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://js.stripe.com${isProd ? "" : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://js.stripe.com${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
