@@ -44,6 +44,7 @@ export async function sendWillEmail({
     const { error } = await resend.emails.send({
       from: FROM,
       to,
+      replyTo: SITE.supportEmail,
       subject: "Your WillBee Will is ready",
       html: willEmailHtml(firstName),
       text: willEmailText(firstName),
@@ -64,6 +65,7 @@ export async function sendMagicLink(to: string, url: string): Promise<{ sent: bo
     const { error } = await resend.emails.send({
       from: FROM,
       to,
+      replyTo: SITE.supportEmail,
       subject: "Your WillBee sign-in link",
       html: `<p>Hello,</p><p>Click the link below to sign in and access your Will. This link expires in 30 minutes.</p><p><a href="${url}">Sign in to WillBee</a></p><p>If you didn’t request this, you can safely ignore this email.</p>`,
       text: `Sign in to WillBee: ${url}\n\nThis link expires in 30 minutes. If you didn’t request this, ignore this email.`,
