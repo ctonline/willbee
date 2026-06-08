@@ -6,7 +6,7 @@ export const SITE = {
   description:
     "Create a legally-structured Last Will and Testament for Scotland in 10–15 minutes. Plain English, no solicitor, instant PDF.",
   url: "https://will.willbee.site",
-  supportEmail: "support@willbee.site",
+  supportEmail: "willbee2025@gmail.com",
   emailFrom: "WillBee <noreply@will.willbee.site>",
 } as const;
 
