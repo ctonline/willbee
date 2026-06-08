@@ -16,6 +16,11 @@ function getResend(): Resend | null {
 
 const FROM = process.env.RESEND_FROM || SITE.emailFrom;
 
+// Passwordless re-download link (PRD §3.5). The recipient enters their email on
+// /auth and gets a secure one-time sign-in link to download their Will again.
+const APP_URL = (process.env.NEXT_PUBLIC_SITE_URL || SITE.url).replace(/\/$/, "");
+const AUTH_URL = `${APP_URL}/auth`;
+
 interface WillEmailArgs {
   to: string;
   userName: string;
@@ -85,9 +90,11 @@ function willEmailText(firstName: string): string {
     "",
     "Remember: WillBee provides a document-generation service and this is not legal advice. Your Will is only valid once correctly signed and witnessed.",
     "",
+    `Need your Will again later, or on another device? Sign in with this email address at ${AUTH_URL} and we'll send you a secure link to download it again. No password needed.`,
+    "",
     `Need help? Contact ${SITE.supportEmail}.`,
     "",
-    "— The WillBee team",
+    "The WillBee team",
   ].join("\n");
 }
 
@@ -105,7 +112,8 @@ function willEmailHtml(firstName: string): string {
       <li>Review your Will every 3–5 years or after any major life event.</li>
     </ol>
     <p style="font-size:13px;color:#666">Remember: WillBee provides a document-generation service and this is <strong>not legal advice</strong>. Your Will is only valid once it has been correctly signed and witnessed.</p>
+    <p style="font-size:13px;color:#666">Need your Will again later, or on another device? <a href="${AUTH_URL}">Sign in with this email address</a> and we’ll send you a secure link to download it again. No password needed.</p>
     <p style="font-size:13px;color:#666">Need help? Contact <a href="mailto:${SITE.supportEmail}">${SITE.supportEmail}</a>.</p>
-    <p style="font-size:13px">— The WillBee team</p>
+    <p style="font-size:13px">The WillBee team</p>
   </div>`;
 }

@@ -5,6 +5,7 @@ import {
   Check,
   ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
@@ -40,7 +41,15 @@ export function LandingPage() {
           <span className="font-serif text-xl font-medium tracking-tight">
             Will<span className="text-primary">Bee</span>
           </span>
-          <StartButton size="sm">Start Now</StartButton>
+          <div className="flex items-center gap-4 sm:gap-5">
+            <Link
+              href="/auth"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Sign in
+            </Link>
+            <StartButton size="sm">Start Now</StartButton>
+          </div>
         </div>
       </header>
 

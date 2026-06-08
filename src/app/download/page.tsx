@@ -131,8 +131,13 @@ export default function DownloadPage() {
               <div className="mt-6 flex items-start gap-2 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <span>
-                  Didn’t get the email? Check your spam folder, or download again
-                  here any time. This document is not legal advice.
+                  Didn’t get the email? Check your spam folder. Need your Will
+                  again later, or on another device?{" "}
+                  <Link href="/auth" className="font-medium text-primary underline">
+                    Sign in with your email
+                  </Link>{" "}
+                  and we’ll send a secure link to download it again, no password
+                  needed. This document is not legal advice.
                 </span>
               </div>
             </div>
