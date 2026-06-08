@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import Image from "next/image";
 import { ArrowLeft, ArrowRight, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -303,9 +304,14 @@ function FlowShell({
     <div className="min-h-dvh bg-background">
       <header className="border-b bg-card/60 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-          <span className="font-semibold tracking-tight">
-            Will<span className="text-primary">Bee</span>
-          </span>
+          <Image
+            src="/willbee-full.png"
+            alt="WillBee"
+            width={1698}
+            height={608}
+            priority
+            className="h-8 w-auto"
+          />
           <button
             onClick={onExit}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

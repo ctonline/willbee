@@ -6,6 +6,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/star-rating";
@@ -38,9 +39,14 @@ export function LandingPage() {
       {/* Header */}
       <header className="border-b bg-background">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5">
-          <span className="font-serif text-xl font-medium tracking-tight">
-            Will<span className="text-primary">Bee</span>
-          </span>
+          <Image
+            src="/willbee-full.png"
+            alt="WillBee"
+            width={1698}
+            height={608}
+            priority
+            className="h-8 w-auto sm:h-9"
+          />
           <div className="flex items-center gap-4 sm:gap-5">
             <Link
               href="/auth"

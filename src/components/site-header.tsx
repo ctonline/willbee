@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 /**
  * Static site header used on the standalone pages (static content, checkout,
@@ -8,8 +9,15 @@ export function SiteHeader() {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5">
-        <Link href="/" className="font-serif text-xl font-medium tracking-tight">
-          Will<span className="text-primary">Bee</span>
+        <Link href="/" className="inline-flex items-center">
+          <Image
+            src="/willbee-full.png"
+            alt="WillBee"
+            width={1698}
+            height={608}
+            priority
+            className="h-8 w-auto sm:h-9"
+          />
         </Link>
         <div className="flex items-center gap-5 sm:gap-6">
           <nav className="hidden gap-6 text-sm text-muted-foreground sm:flex">
