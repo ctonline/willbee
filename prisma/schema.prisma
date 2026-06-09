@@ -39,3 +39,28 @@ model MagicToken {
 
   @@index([email])
 }
+
+// Marketing leads captured from Meta (Facebook/Instagram) Lead Ads, driven
+// through a 3-stage nurture email sequence.
+model Lead {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String?
+  source      String    @default("meta")
+  /// Meta leadgen_id, kept for idempotency / debugging.
+  leadgenId   String?
+  formId      String?
+  /// Number of sequence emails sent so far (0..3).
+  stage       Int       @default(0)
+  /// When the next sequence email is due (null once finished).
+  nextEmailAt DateTime?
+  /// active | completed | unsubscribed | converted | bounced
+  status      String    @default("active")
+  /// Opaque token used for one-click unsubscribe links.
+  unsubToken  String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, nextEmailAt])
+  @@index([leadgenId])
+}

@@ -77,6 +77,45 @@ export async function sendMagicLink(to: string, url: string): Promise<{ sent: bo
   }
 }
 
+/** Send a marketing/nurture email (Meta-lead sequence). Includes List-Unsubscribe
+ * headers for one-click unsubscribe and good deliverability. */
+export async function sendMarketingEmail({
+  to,
+  subject,
+  html,
+  text,
+  unsubUrl,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  unsubUrl?: string;
+}): Promise<{ sent: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) return { sent: false, error: "Email not configured (demo mode)." };
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      replyTo: SITE.supportEmail,
+      subject,
+      html,
+      text,
+      headers: unsubUrl
+        ? {
+            "List-Unsubscribe": `<${unsubUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          }
+        : undefined,
+    });
+    if (error) return { sent: false, error: error.message };
+    return { sent: true };
+  } catch (e) {
+    return { sent: false, error: e instanceof Error ? e.message : "Send failed" };
+  }
+}
+
 function willEmailText(firstName: string): string {
   return [
     `Hello ${firstName},`,
