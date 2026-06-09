@@ -193,13 +193,22 @@ async function isCustomer(email: string): Promise<boolean> {
   return !!will?.paid;
 }
 
-/** Capture a lead and immediately send stage 1. Idempotent on email. */
-export async function captureLead(input: {
-  email: string;
-  name?: string | null;
-  leadgenId?: string | null;
-  formId?: string | null;
-}): Promise<{ created: boolean; reason?: string }> {
+/**
+ * Capture a lead. Idempotent on email.
+ * - sendImmediately (default): fire stage 1 now (the live webhook path).
+ * - sendImmediately: false: enrol due-now but don't send, so the daily cron
+ *   drips it out (used by the bulk import so we don't blast every old lead at once).
+ */
+export async function captureLead(
+  input: {
+    email: string;
+    name?: string | null;
+    leadgenId?: string | null;
+    formId?: string | null;
+  },
+  opts: { sendImmediately?: boolean } = {},
+): Promise<{ created: boolean; reason?: string }> {
+  const sendImmediately = opts.sendImmediately ?? true;
   const email = input.email.trim().toLowerCase();
   if (!email || !email.includes("@")) return { created: false, reason: "invalid email" };
 
@@ -221,7 +230,7 @@ export async function captureLead(input: {
     },
   });
 
-  if (!customer) await sendStage(lead, 0);
+  if (!customer && sendImmediately) await sendStage(lead, 0);
   return { created: true };
 }
 
