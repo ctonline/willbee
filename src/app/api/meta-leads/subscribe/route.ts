@@ -27,6 +27,22 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "META_PAGE_ACCESS_TOKEN is not set." }, { status: 400 });
   }
 
+  // Safe diagnostics (no token in the output) to identify what the stored
+  // token actually is and which permissions/pages it carries.
+  if (url.searchParams.get("debug") === "1") {
+    const j = async (path: string) =>
+      (await fetch(`${base}/${path}${path.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(token)}`)).json();
+    const me = await j("me?fields=id,name");
+    const perms = await j("me/permissions");
+    const accts = await j("me/accounts?fields=id,name");
+    return NextResponse.json({
+      tokenIdentifiesAs: me,
+      permissions: (perms as { data?: { permission: string; status: string }[] }).data,
+      pages: (accts as { data?: { id: string; name: string }[]; error?: unknown }).data,
+      accountsError: (accts as { error?: unknown }).error,
+    });
+  }
+
   const want = (url.searchParams.get("page") || "").toLowerCase();
 
   // Discover Pages this token can manage. With a USER token this returns the
