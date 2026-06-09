@@ -64,3 +64,15 @@ model Lead {
   @@index([status, nextEmailAt])
   @@index([leadgenId])
 }
+
+// A reusable referral code owned by a customer. Anyone who uses it gets a
+// discount (default 25%). Shared via a post-purchase email link.
+model Referral {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  ownerEmail      String   @unique
+  discountPercent Int      @default(25)
+  /// Best-effort count of how many times the code has been applied at checkout.
+  uses            Int      @default(0)
+  createdAt       DateTime @default(now())
+}

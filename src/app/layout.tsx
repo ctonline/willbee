@@ -3,6 +3,7 @@ import { Archivo, Spectral, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ReferralCapture } from "@/components/referral-capture";
 import { SITE } from "@/lib/constants";
 
 // Civic Scotch direction: a sturdy grotesque for UI/forms, paired on a
@@ -56,6 +57,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <TooltipProvider delay={150}>{children}</TooltipProvider>
+        <ReferralCapture />
         <Toaster richColors position="top-center" />
       </body>
     </html>

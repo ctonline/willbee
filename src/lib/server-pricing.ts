@@ -1,24 +1,27 @@
 import "server-only";
 import { getPriceForDate, applyDiscountPercent, type PriceInfo } from "./pricing";
-import { validatePromoCode } from "./promo";
+import { resolvePromo } from "./referrals";
 
 /**
  * Authoritative price computed on the server (never trust a client-supplied
- * amount). Applies the active dynamic price and, optionally, a valid promo code.
+ * amount). Applies the active dynamic price and, optionally, a valid promo or
+ * referral code (resolved against the static list and the referral table).
  */
-export function resolveServerPrice(promoCode?: string | null): {
+export async function resolveServerPrice(promoCode?: string | null): Promise<{
   price: PriceInfo;
   appliedPromo: string | null;
-} {
+  promoKind: "static" | "referral" | null;
+}> {
   const base = getPriceForDate();
   if (promoCode) {
-    const result = validatePromoCode(promoCode);
-    if (result.ok) {
+    const r = await resolvePromo(promoCode);
+    if (r.ok) {
       return {
-        price: applyDiscountPercent(base, result.promo.discountPercent),
-        appliedPromo: result.promo.code,
+        price: applyDiscountPercent(base, r.percent),
+        appliedPromo: r.code,
+        promoKind: r.kind,
       };
     }
   }
-  return { price: base, appliedPromo: null };
+  return { price: base, appliedPromo: null, promoKind: null };
 }

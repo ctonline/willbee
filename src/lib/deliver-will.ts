@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import { renderWillBuffer } from "./pdf/render-server";
 import { willFilename } from "./will-builder";
 import { sendWillEmail } from "./email";
+import { getOrCreateReferralCode } from "./referrals";
 
 /**
  * Marks a paid Will as delivered and emails the PDF — exactly once.
@@ -69,11 +70,15 @@ export async function deliverWill(opts: {
   try {
     const willData = JSON.parse(will.data) as WillData;
     const pdf = await renderWillBuffer(willData);
+    // Give the buyer a referral code to share (friend gets a discount).
+    const referral = await getOrCreateReferralCode(will.email).catch(() => null);
     const result = await sendWillEmail({
       to: will.email,
       userName: willData.testator.fullName,
       pdf,
       filename: willFilename(willData.testator.fullName),
+      referralCode: referral?.code,
+      referralUrl: referral?.url,
     });
     if (!result.sent) {
       await prisma.will.update({ where: { id: will.id }, data: { emailedAt: null } });

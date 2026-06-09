@@ -26,6 +26,8 @@ interface WillEmailArgs {
   userName: string;
   pdf: Buffer;
   filename: string;
+  referralCode?: string;
+  referralUrl?: string;
 }
 
 /** Send the Will delivery email with the PDF attached (PRD §3.8). */
@@ -34,11 +36,14 @@ export async function sendWillEmail({
   userName,
   pdf,
   filename,
+  referralCode,
+  referralUrl,
 }: WillEmailArgs): Promise<{ sent: boolean; error?: string }> {
   const resend = getResend();
   if (!resend) return { sent: false, error: "Email not configured (demo mode)." };
 
   const firstName = userName.trim().split(/\s+/)[0] || "there";
+  const referral = referralCode && referralUrl ? { code: referralCode, url: referralUrl } : null;
 
   try {
     const { error } = await resend.emails.send({
@@ -46,8 +51,8 @@ export async function sendWillEmail({
       to,
       replyTo: SITE.supportEmail,
       subject: "Your WillBee Will is ready",
-      html: willEmailHtml(firstName),
-      text: willEmailText(firstName),
+      html: willEmailHtml(firstName, referral),
+      text: willEmailText(firstName, referral),
       attachments: [{ filename, content: pdf }],
     });
     if (error) return { sent: false, error: error.message };
@@ -116,7 +121,7 @@ export async function sendMarketingEmail({
   }
 }
 
-function willEmailText(firstName: string): string {
+function willEmailText(firstName: string, referral: { code: string; url: string } | null): string {
   return [
     `Hello ${firstName},`,
     "",
@@ -130,6 +135,14 @@ function willEmailText(firstName: string): string {
     "5. Review your Will every 3–5 years or after any major life event.",
     "",
     "Remember: WillBee provides a document-generation service and this is not legal advice. Your Will is only valid once correctly signed and witnessed.",
+    ...(referral
+      ? [
+          "",
+          "Know someone who needs a Will? Share WillBee and your friend gets 25% off:",
+          referral.url,
+          `(or they can enter code ${referral.code} at checkout)`,
+        ]
+      : []),
     "",
     `Need your Will again later, or on another device? Sign in with this email address at ${AUTH_URL} and we'll send you a secure link to download it again. No password needed.`,
     "",
@@ -139,7 +152,18 @@ function willEmailText(firstName: string): string {
   ].join("\n");
 }
 
-function willEmailHtml(firstName: string): string {
+function willEmailHtml(firstName: string, referral: { code: string; url: string } | null): string {
+  const referralBlock = referral
+    ? `
+    <div style="margin:24px 0;padding:16px 18px;background:#d7efe2;border-radius:8px">
+      <p style="margin:0 0 6px;font-size:15px;font-weight:bold;color:#0e3c29">Know someone who needs a Will?</p>
+      <p style="margin:0 0 12px;font-size:14px;color:#0e3c29">Share WillBee and your friend gets <strong>25% off</strong>.</p>
+      <p style="margin:0 0 10px">
+        <a href="${referral.url}" style="background:#10583c;color:#f3fdf8;text-decoration:none;font-weight:bold;padding:10px 18px;border-radius:4px;display:inline-block">Share your 25% link</a>
+      </p>
+      <p style="margin:0;font-size:13px;color:#0e3c29">Or they can enter code <strong>${referral.code}</strong> at checkout.</p>
+    </div>`
+    : "";
   return `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
     <h1 style="font-size:20px">Your Will is ready, ${firstName} 🎉</h1>
@@ -152,6 +176,7 @@ function willEmailHtml(firstName: string): string {
       <li>Store the original safely and tell your executor where it is.</li>
       <li>Review your Will every 3–5 years or after any major life event.</li>
     </ol>
+    ${referralBlock}
     <p style="font-size:13px;color:#666">Remember: WillBee provides a document-generation service and this is <strong>not legal advice</strong>. Your Will is only valid once it has been correctly signed and witnessed.</p>
     <p style="font-size:13px;color:#666">Need your Will again later, or on another device? <a href="${AUTH_URL}">Sign in with this email address</a> and we’ll send you a secure link to download it again. No password needed.</p>
     <p style="font-size:13px;color:#666">Need help? Contact <a href="mailto:${SITE.supportEmail}">${SITE.supportEmail}</a>.</p>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { resolveServerPrice } from "@/lib/server-pricing";
+import { noteReferralUse } from "@/lib/referrals";
 import { CURRENCY } from "@/lib/pricing";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { willDataSchema } from "@/lib/will-schema";
@@ -34,7 +35,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { price, appliedPromo } = resolveServerPrice(body.promoCode);
+  const { price, appliedPromo, promoKind } = await resolveServerPrice(body.promoCode);
+  if (promoKind === "referral" && appliedPromo) void noteReferralUse(appliedPromo);
 
   // Demo mode — no Stripe key configured.
   if (!stripeEnabled()) {

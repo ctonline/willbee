@@ -10,6 +10,7 @@ const EMAIL_KEY = "willbee:email";
 const COMPLETED_KEY = "willbee:completed";
 const PAID_KEY = "willbee:paid";
 const STEP_KEY = "willbee:step";
+const REF_KEY = "willbee:ref";
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -51,6 +52,14 @@ export function saveStep(index: number): void {
 export function loadStep(): number {
   const n = read<number>(STEP_KEY, 0);
   return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+/** Referral code captured from a `?ref=` link, applied automatically at checkout. */
+export function saveRef(code: string): void {
+  write(REF_KEY, code);
+}
+export function loadRef(): string {
+  return read<string>(REF_KEY, "");
 }
 
 export function markCompleted(v: boolean): void {

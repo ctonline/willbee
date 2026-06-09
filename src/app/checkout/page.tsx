@@ -25,6 +25,7 @@ import {
   saveEmail,
   isCompleted,
   markPaid,
+  loadRef,
 } from "@/lib/client-store";
 import { buildWillData } from "@/lib/will-builder";
 import {
@@ -33,7 +34,6 @@ import {
   formatGBP,
   type PriceInfo,
 } from "@/lib/pricing";
-import { validatePromoCode } from "@/lib/promo";
 import { validateEmail } from "@/lib/validation";
 import type { WillData } from "@/lib/types";
 
@@ -74,6 +74,30 @@ export default function CheckoutPage() {
       setWill(buildWillData(answers));
     }
     setHydrated(true);
+
+    // Auto-apply a referral code from a shared link (captured into storage).
+    // We set the discount for display now; the email step creates the intent
+    // with this code, and the amount is recomputed server-side before charging.
+    const ref = loadRef();
+    if (ref) {
+      (async () => {
+        try {
+          const res = await fetch("/api/validate-promo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: ref }),
+          });
+          const data = await res.json();
+          if (data.ok) {
+            setAppliedPromo(data.code);
+            setPromoInput(data.code);
+            setPrice(applyDiscountPercent(getPriceForDate(), data.percent));
+          }
+        } catch {
+          /* ignore — they can still apply manually */
+        }
+      })();
+    }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -124,16 +148,31 @@ export default function CheckoutPage() {
     void createIntent(appliedPromo);
   }
 
-  function applyPromo() {
-    const result = validatePromoCode(promoInput);
-    if (!result.ok) {
-      setPromoError(result.error);
+  async function applyPromo() {
+    const code = promoInput.trim();
+    if (!code) {
+      setPromoError("Enter a promo code.");
       return;
     }
-    setPromoError(null);
-    setAppliedPromo(result.promo.code);
-    setPrice(applyDiscountPercent(getPriceForDate(), result.promo.discountPercent));
-    void createIntent(result.promo.code);
+    try {
+      const res = await fetch("/api/validate-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setPromoError(data.error || "That code isn’t recognised.");
+        return;
+      }
+      setPromoError(null);
+      setAppliedPromo(data.code);
+      setPromoInput(data.code);
+      setPrice(applyDiscountPercent(getPriceForDate(), data.percent));
+      void createIntent(data.code);
+    } catch {
+      setPromoError("Couldn’t check that code. Please try again.");
+    }
   }
 
   function removePromo() {
