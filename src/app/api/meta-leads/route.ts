@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { captureLead } from "@/lib/leads";
+import { graphBase, resolvePageToken } from "@/lib/meta";
 
 // Meta (Facebook/Instagram) Lead Ads webhook. Needs Node runtime for crypto.
 export const runtime = "nodejs";
-
-const GRAPH = process.env.META_GRAPH_VERSION || "v21.0";
 
 // GET: webhook verification handshake. Meta calls this once when you subscribe.
 export async function GET(req: Request) {
@@ -38,11 +37,10 @@ interface LeadField {
 }
 
 /** Fetch a submitted lead's field data from the Graph API. */
-async function fetchLead(leadgenId: string): Promise<{ email?: string; name?: string }> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
-  if (!token) throw new Error("META_PAGE_ACCESS_TOKEN not set");
+async function fetchLead(leadgenId: string, pageId?: string): Promise<{ email?: string; name?: string }> {
+  const { token } = await resolvePageToken(pageId);
   const res = await fetch(
-    `https://graph.facebook.com/${GRAPH}/${encodeURIComponent(leadgenId)}?fields=field_data&access_token=${token}`,
+    `${graphBase}/${encodeURIComponent(leadgenId)}?fields=field_data&access_token=${encodeURIComponent(token)}`,
   );
   if (!res.ok) throw new Error(`Graph API ${res.status}: ${await res.text()}`);
   const data = (await res.json()) as { field_data?: LeadField[] };
@@ -66,7 +64,7 @@ export async function POST(req: Request) {
 
   let body: {
     object?: string;
-    entry?: { changes?: { field?: string; value?: { leadgen_id?: string; form_id?: string } }[] }[];
+    entry?: { changes?: { field?: string; value?: { leadgen_id?: string; form_id?: string; page_id?: string } }[] }[];
   };
   try {
     body = JSON.parse(rawBody);
@@ -79,7 +77,7 @@ export async function POST(req: Request) {
     for (const change of entry.changes ?? []) {
       if (change.field !== "leadgen" || !change.value?.leadgen_id) continue;
       try {
-        const { email, name } = await fetchLead(change.value.leadgen_id);
+        const { email, name } = await fetchLead(change.value.leadgen_id, change.value.page_id);
         if (email) {
           await captureLead({
             email,

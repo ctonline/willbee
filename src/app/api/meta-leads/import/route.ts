@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { captureLead } from "@/lib/leads";
+import { graphBase as base, resolvePageToken } from "@/lib/meta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const GRAPH = process.env.META_GRAPH_VERSION || "v21.0";
-const base = `https://graph.facebook.com/${GRAPH}`;
 const DEFAULT_PAGE_ID = process.env.META_PAGE_ID || "838094662712983";
 
 interface Field {
@@ -47,13 +46,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
-  if (!token) return NextResponse.json({ error: "META_PAGE_ACCESS_TOKEN not set" }, { status: 400 });
+  if (!process.env.META_PAGE_ACCESS_TOKEN) {
+    return NextResponse.json({ error: "META_PAGE_ACCESS_TOKEN not set" }, { status: 400 });
+  }
 
-  const pageId = url.searchParams.get("pageId") || DEFAULT_PAGE_ID;
+  const requestedPageId = url.searchParams.get("pageId") || DEFAULT_PAGE_ID;
   const dry = url.searchParams.get("dry") === "1";
   const cap = Math.min(2000, Number(url.searchParams.get("limit") ?? 1000));
-  const at = `access_token=${encodeURIComponent(token)}`;
+
+  // Reading lead forms/leads needs a PAGE token; resolve one (handles a stored
+  // User/System-User token).
+  const resolved = await resolvePageToken(requestedPageId);
+  const pageId = resolved.pageId ?? requestedPageId;
+  const at = `access_token=${encodeURIComponent(resolved.token)}`;
 
   try {
     // 1. All lead forms on the Page.
