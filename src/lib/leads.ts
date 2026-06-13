@@ -158,6 +158,38 @@ const SEQUENCE: Stage[] = [
   },
 ];
 
+// One-off price-drop announcement (sent via /api/leads/announce). Sending it to
+// a lead also ends their nurture sequence.
+const ANNOUNCE = {
+  subject: `WillBee is now just ${PRICE} (was ${REGULAR})`,
+  html: (name: string, token: string) =>
+    shell(
+      `<h1 style="font-size:22px;margin:0 0 12px">Good news, ${name}: the price just dropped</h1>
+       <p>You enquired about writing your Scottish Will with WillBee, so we wanted you to be the
+       first to know we've cut the price.</p>
+       <p style="background:#d7efe2;border-radius:6px;padding:14px 16px;font-size:17px;text-align:center;color:#0e3c29">
+         Now just <strong>${PRICE}</strong>
+         <span style="text-decoration:line-through;opacity:.7">${REGULAR}</span>
+         (<strong>${SAVINGS}% off</strong>)</p>
+       <p>Same guided, plain-English process: a few questions, done in about 15 minutes, no
+       solicitor needed. It's a limited-time offer.</p>
+       ${button(`Write my Will for ${PRICE}`, APP_URL)}`,
+      token,
+    ),
+  text: (name: string, token: string) =>
+    [
+      `Good news, ${name}: the price just dropped.`,
+      "",
+      `You enquired about writing your Scottish Will with WillBee. We've cut the price to just ${PRICE} (was ${REGULAR}, ${SAVINGS}% off).`,
+      "",
+      "Same guided, plain-English process, done in about 15 minutes, no solicitor needed. Limited-time offer.",
+      "",
+      `Write my Will: ${APP_URL}`,
+      "",
+      `Unsubscribe: ${unsubUrl(token)}`,
+    ].join("\n"),
+};
+
 // ── Orchestration ────────────────────────────────────────────────────────────
 
 function dueAt(createdAt: Date, stageIndex: number): Date | null {
@@ -280,4 +312,41 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
     data: { status: "unsubscribed", nextEmailAt: null },
   });
   return res.count > 0;
+}
+
+/**
+ * One-off broadcast: email all active leads the price-drop announcement and end
+ * their nurture sequence (so they don't also get stage 2/3). Idempotent —
+ * delivered leads become "completed" and won't be targeted again.
+ */
+export async function runPriceAnnouncement(opts: { dry?: boolean } = {}): Promise<{
+  targeted: number;
+  sent: number;
+  failed: number;
+}> {
+  const leads = await prisma.lead.findMany({ where: { status: "active" }, take: 1000 });
+  if (opts.dry) return { targeted: leads.length, sent: 0, failed: 0 };
+
+  let sent = 0,
+    failed = 0;
+  for (const lead of leads) {
+    const name = firstNameFrom(lead.name, lead.email);
+    const r = await sendMarketingEmail({
+      to: lead.email,
+      subject: ANNOUNCE.subject,
+      html: ANNOUNCE.html(name, lead.unsubToken),
+      text: ANNOUNCE.text(name, lead.unsubToken),
+      unsubUrl: unsubUrl(lead.unsubToken),
+    });
+    if (r.sent) {
+      sent++;
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: "completed", nextEmailAt: null },
+      });
+    } else {
+      failed++;
+    }
+  }
+  return { targeted: leads.length, sent, failed };
 }
