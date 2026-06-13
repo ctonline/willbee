@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { SiteHeader } from "@/components/site-header";
 import { prisma } from "@/lib/db";
 
@@ -28,7 +29,10 @@ export default async function LeadsDashboard({
 }) {
   const { key } = await searchParams;
   const secret = process.env.CRON_SECRET;
-  const authed = !!secret && key === secret;
+  const cookieStore = await cookies();
+  // Authed via the cookie (set by middleware after one keyed visit) or, as a
+  // fallback, the key in the URL.
+  const authed = !!secret && (cookieStore.get("wb_admin")?.value === secret || key === secret);
 
   if (!authed) {
     return (
@@ -37,8 +41,10 @@ export default async function LeadsDashboard({
         <main className="mx-auto w-full max-w-md flex-1 px-4 py-24 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Leads dashboard</h1>
           <p className="mt-3 text-muted-foreground">
-            This page is private. Append <code className="rounded bg-muted px-1">?key=…</code> with
-            your dashboard key to view it.
+            This page is private. Visit once with{" "}
+            <code className="rounded bg-muted px-1">?key=…</code> and we&rsquo;ll remember this
+            browser for 30 days, so a plain <code className="rounded bg-muted px-1">/admin/leads</code>{" "}
+            bookmark works after that.
           </p>
         </main>
       </>
