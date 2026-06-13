@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { prisma } from "./db";
 import { sendMarketingEmail } from "./email";
 import { SITE } from "./constants";
+import { getPriceForDate, formatGBP } from "./pricing";
 
 // 3-stage Meta-lead nurture sequence. Stage 1 fires the moment a lead is
 // captured; stages 2 and 3 are sent by the daily cron when they fall due.
@@ -13,8 +14,11 @@ const APP_URL = (process.env.NEXT_PUBLIC_SITE_URL || SITE.url).replace(/\/$/, ""
 const OFFSET_DAYS = [0, 3, 7];
 const TOTAL_STAGES = OFFSET_DAYS.length;
 
-// Featured incentive (an existing code in src/lib/promo.ts).
-const PROMO = { code: "WELCOME10", percent: 10 };
+// Live offer pricing, pulled from the single source so the emails stay in sync.
+const OFFER = getPriceForDate();
+const PRICE = formatGBP(OFFER.price);
+const REGULAR = formatGBP(OFFER.originalPrice);
+const SAVINGS = OFFER.savingsPercent;
 
 function unsubUrl(token: string): string {
   return `${APP_URL}/api/unsubscribe?token=${token}`;
@@ -72,7 +76,7 @@ const SEQUENCE: Stage[] = [
          <p>It takes about 10&ndash;15 minutes: answer a few guided questions, and download your document
          straight away. We'll also email you a copy with step-by-step signing instructions.</p>
          ${button("Start your Will", APP_URL)}
-         <p style="font-size:14px;color:#4a5a5b">No jargon, no subscriptions, one simple fee.</p>`,
+         <p style="font-size:15px"><strong>Right now it's just ${PRICE}</strong> (normally ${REGULAR}). No jargon, no subscriptions.</p>`,
         token,
       ),
     text: (name, token) =>
@@ -84,6 +88,8 @@ const SEQUENCE: Stage[] = [
         "It takes about 10-15 minutes: answer a few guided questions and download your document straight away. We'll also email a copy with signing instructions.",
         "",
         `Start your Will: ${APP_URL}`,
+        "",
+        `Right now it's just ${PRICE} (normally ${REGULAR}). No jargon, no subscriptions.`,
         "",
         "WillBee is a document-generation service and does not provide legal advice.",
         `Unsubscribe: ${unsubUrl(token)}`,
@@ -104,8 +110,8 @@ const SEQUENCE: Stage[] = [
          <p>WillBee handles the parts that matter for Scotland: executors, residue, guardians and legal
          rights, all explained as you go.</p>
          <p style="background:#d7efe2;border-radius:6px;padding:12px 14px;font-size:15px">
-           A small thank-you for enquiring: use code <strong>${PROMO.code}</strong> for
-           <strong>${PROMO.percent}% off</strong> at checkout.</p>
+           And right now it's our lowest ever price: just <strong>${PRICE}</strong>
+           (was ${REGULAR}, ${SAVINGS}% off).</p>
          ${button("Write my Will now", APP_URL)}`,
         token,
       ),
@@ -117,7 +123,7 @@ const SEQUENCE: Stage[] = [
         "",
         "WillBee handles executors, residue, guardians and legal rights, explained as you go.",
         "",
-        `Use code ${PROMO.code} for ${PROMO.percent}% off at checkout.`,
+        `And right now it's just ${PRICE} (was ${REGULAR}, ${SAVINGS}% off).`,
         `Write my Will: ${APP_URL}`,
         "",
         `Unsubscribe: ${unsubUrl(token)}`,
@@ -131,8 +137,8 @@ const SEQUENCE: Stage[] = [
         `<h1 style="font-size:22px;margin:0 0 12px">One last nudge, ${name}</h1>
          <p>Families across Scotland use WillBee to get this off their to-do list, usually in around
          twelve minutes. It's the kind of thing that's easy to put off and a real relief once it's done.</p>
-         <p>Your <strong>${PROMO.percent}% off</strong> code <strong>${PROMO.code}</strong> is still
-         available, just enter it at checkout.</p>
+         <p>And it's still just <strong>${PRICE}</strong> (down from ${REGULAR}), but this
+         limited offer won't be around forever.</p>
          ${button("Get peace of mind", APP_URL)}
          <p style="font-size:14px;color:#4a5a5b">If now isn't the right time, no problem at all, you can
          come back whenever you're ready.</p>`,
@@ -144,7 +150,7 @@ const SEQUENCE: Stage[] = [
         "",
         "Families across Scotland use WillBee to get this off their to-do list, usually in around twelve minutes.",
         "",
-        `Your ${PROMO.percent}% off code ${PROMO.code} is still available at checkout.`,
+        `It's still just ${PRICE} (down from ${REGULAR}), but this limited offer won't last.`,
         `Get peace of mind: ${APP_URL}`,
         "",
         `Unsubscribe: ${unsubUrl(token)}`,

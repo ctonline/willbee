@@ -1,13 +1,9 @@
-// Pricing rules (PRD §6.1). Determined at runtime by date.
-//
-//   2025            → £9.99  "2025 Special Offer"
-//   Any September   → £19    "September Special Offer"
-//   Otherwise       → £49    (regular)
-//
-// The original price (£49) is shown struck through whenever a discount applies,
-// along with the percentage saved.
+// Pricing (PRD §6.1). A flat limited-time offer: the current price is shown as
+// a discount from the £49 regular price (struck through, with the % saved).
 
 export const REGULAR_PRICE = 49;
+export const CURRENT_PRICE = 9.99;
+export const OFFER_LABEL = "Limited-time offer";
 export const CURRENCY = "gbp";
 
 export interface PriceInfo {
@@ -29,26 +25,9 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/**
- * Resolve the active price for a given date (defaults to now).
- * Pass an explicit date in tests to make this deterministic.
- */
-export function getPriceForDate(date: Date = new Date()): PriceInfo {
-  const year = date.getFullYear();
-  const month = date.getMonth(); // 0 = January … 8 = September
-
-  let price = REGULAR_PRICE;
-  let offerLabel: string | null = null;
-
-  if (year === 2025) {
-    price = 9.99;
-    offerLabel = "2025 Special Offer";
-  } else if (month === 8) {
-    // September, in any year other than 2025 (2025 already handled above)
-    price = 19;
-    offerLabel = "September Special Offer";
-  }
-
+/** The active price. (Name kept as `getPriceForDate` for call-site compatibility.) */
+export function getPriceForDate(): PriceInfo {
+  const price = CURRENT_PRICE;
   const isDiscounted = price < REGULAR_PRICE;
   const savingsPercent = isDiscounted
     ? Math.round(((REGULAR_PRICE - price) / REGULAR_PRICE) * 100)
@@ -59,7 +38,7 @@ export function getPriceForDate(date: Date = new Date()): PriceInfo {
     originalPrice: REGULAR_PRICE,
     isDiscounted,
     savingsPercent,
-    offerLabel,
+    offerLabel: isDiscounted ? OFFER_LABEL : null,
     amountInPence: Math.round(price * 100),
   };
 }
